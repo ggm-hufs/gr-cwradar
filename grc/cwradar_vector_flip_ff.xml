@@ -1,0 +1,22 @@
+<block>
+  <name>Vector Flip</name>
+  <key>cwradar_vector_flip_ff</key>
+  <category>CW Radar</category>
+  <import>import cwradar</import>
+  <make>cwradar.vector_flip_ff($vlen)</make>
+  <param>
+    <name>Num Elements</name>
+    <key>vlen</key>
+    <type>raw</type>
+  </param>
+  <sink>
+    <name>in</name>
+    <type>float</type>
+    <vlen>$vlen</vlen>
+  </sink>
+  <source>
+    <name>out</name>
+    <type>float</type>
+    <vlen>$vlen</vlen>
+  </source>
+</block>

@@ -1,0 +1,62 @@
+<block>
+  <name>Doppler Velocity Two Ways</name>
+  <key>cwradar_velocity_2way_ff</key>
+  <category>CW Radar</category>
+  <import>import cwradar</import>
+  <make>cwradar.velocity_2way_ff($vlen, $samples_per_sec, $radar_freq, $signal_min_dB, $angle_of_approach, $lowpass_cut_freq)</make>
+  <callback>set_samples_per_sec($samples_per_sec)</callback>
+  <callback>set_radar_freq($radar_freq)</callback>
+  <callback>set_signal_min_dB($signal_min_dB)</callback>
+  <callback>set_angle_of_approach($angle_of_approach)</callback>
+  <callback>set_lowpass_cut_freq($lowpass_cut_freq)</callback>
+  <param>
+    <name>Num Elements(fft length)</name>
+    <key>vlen</key>
+    <type>raw</type>
+  </param>
+  <param>
+    <name>Sampling Rate (Hz)</name>
+    <key>samples_per_sec</key>
+    <type>real</type>
+  </param>
+  <param>
+    <name>Radar Frequency (Hz)</name>
+    <key>radar_freq</key>
+    <type>real</type>
+  </param>
+  <param>
+    <name>Signal Minimum Power (dB)</name>
+    <key>signal_min_dB</key>
+    <type>real</type>
+  </param>
+  <param>
+    <name>Angle of Approach (Degrees)</name>
+    <key>angle_of_approach</key>
+    <type>real</type>
+  </param>
+  <param>
+    <name>Low Pass Cutoff Frequency (Hz)</name>
+    <key>lowpass_cut_freq</key>
+    <type>real</type>
+  </param>
+  <sink>
+    <name>in_negative_freq</name>
+    <type>float</type>
+    <vlen>$vlen</vlen>
+    <nports>1</nports>
+  </sink>
+  <sink>
+    <name>in_positive_freq</name>
+    <type>float</type>
+    <vlen>$vlen</vlen>
+    <nports>1</nports>
+  </sink>
+  <source>
+    <name>Speed</name>
+    <type>float</type>
+  </source>
+  <source>
+    <name>Direction</name>
+    <type>int</type>
+  </source>
+</block>

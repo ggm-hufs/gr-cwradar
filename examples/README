@@ -1,0 +1,13 @@
+#It is considered good practice to add examples in here to demonstrate the
+#functionality of your OOT module. Python scripts, GRC flow graphs or other
+#code can go here.
+
+#This folder includes  the implemented systems using the created singal processing blocks.
+#The final applications have are those named ~_App.py. To run them simply type:
+
+#For CW Radar Single Target type:
+$ sudo ./CW_Radar_Single_Target_App.py
+
+#This folder also includes the GRC flow graphs.
+#The file python_tweak_code contains the modified python code from the CRG generated python code 
+#and the ~_App.py code.

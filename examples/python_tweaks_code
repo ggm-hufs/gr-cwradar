@@ -1,0 +1,40 @@
+					CW RADAR SINGLE TARGET
+					
+					##############################################
+					if val == 1: #if the value is 1 the target is approaching.
+                        val = "Approaching"
+                    elif val == 2: #if the value is 2 the target is receding.
+                        val = "Receding"
+                    elif val == 0: #if the value is 0 there is no target in sight.
+                        val = "No Target Detected"
+                    self.set_target_direction(val)
+                    ###############################################
+					
+					
+					CW RADAR MULTIPLE TARGETS
+					
+					########################################################
+                    #Code to tranlate the vector of speeds to strings:
+                    speed = ""
+                    if val[0] == 0: #if the value is 0 there is no target in sight.
+                        speed = "No Target Detected"
+                    elif val[0] != 0:
+                        for i in range(len(val)):
+                            if val[i] != 0:
+                                speed = speed + "Target " + str(i+1) + ": " + str(round(val[i],2)) + " Kph\t"
+                    self.set_target_speed_vector(speed)
+                    ########################################################
+                    
+                    ########################################################
+                    #Code to tranlate the vector of directions to strings:
+                    direction = ""
+                    if val[0] == 0:
+                            direction = "No Target Detected"
+                    elif val[0] != 0: #if the value is 0 there is no target in sight.
+                        for i in range(len(val)):
+                            if val[i] == 1:   #if the value is 1 the target is approaching.
+                                direction = direction + "Target " + str(i+1) + ": " + "Approaching\t"
+                            elif val[i] == 2: #if the value is 2 the target is receding.
+                                direction = direction + "Target " + str(i+1) + ": " + "Receding\t"
+                    self.set_target_direction_vector(direction)
+                    ########################################################

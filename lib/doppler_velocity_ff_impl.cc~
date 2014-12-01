@@ -1,0 +1,217 @@
+/* -*- c++ -*- */
+/* 
+ * Copyright 2014 Gabriel Gómez Molina Moreno Catalán at 한국외국어대학교, 대한민국.
+ * 
+ * This is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 3, or (at your option)
+ * any later version.
+ * 
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this software; see the file COPYING.  If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street,
+ * Boston, MA 02110-1301, USA.
+ */
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <gnuradio/io_signature.h>
+#include "doppler_velocity_ff_impl.h"
+#include <math.h>
+#include <stdio.h>
+
+namespace gr 
+{
+	namespace cwradar
+	{
+		doppler_velocity_ff::sptr
+		doppler_velocity_ff::make(size_t vlen, double samples_per_sec, double radar_freq, double signal_min_dB, double angle_of_approach, double lowpass_cut_freq)
+		{
+      		return gnuradio::get_initial_sptr
+        	(new doppler_velocity_ff_impl(vlen, samples_per_sec, radar_freq, signal_min_dB, angle_of_approach, 			lowpass_cut_freq));
+    	}
+
+    	/*
+     	* The private constructor
+     	*/
+    	doppler_velocity_ff_impl::doppler_velocity_ff_impl(size_t vlen, double samples_per_sec, double radar_freq, double signal_min_dB, double angle_of_approach, double lowpass_cut_freq)
+      	: gr::sync_block("doppler_velocity_ff",
+			         gr::io_signature::make(2, 2, vlen*sizeof(float)),
+                     gr::io_signature::make2(2, 2, sizeof(float), sizeof(int))),
+		d_vlen(vlen), //I also iniciate the parameter vlen that is the private member d_vlen.
+        d_samples_per_sec(samples_per_sec), //sample rate.
+        d_radar_freq(radar_freq), //radar frequency.
+        d_signal_min_dB(signal_min_dB), //Power Threshold in dB.
+        d_angle_of_approach(angle_of_approach), //Angle of aproach between the target and the line of sight.
+        d_lowpass_cut_freq(lowpass_cut_freq) //Low-Pass Cutoff Frequency for the fft.
+    	{
+    		set_samples_per_sec(samples_per_sec);
+			set_radar_freq(radar_freq);
+			set_signal_min_dB(signal_min_dB);
+			set_angle_of_approach(angle_of_approach);
+			set_lowpass_cut_freq(lowpass_cut_freq);
+
+    		//std::vector<int> output_sizes;
+			//output_sizes.push_back(sizeof(float));
+			//output_sizes.push_back(sizeof(int));
+    		//gr::sync_block("doppler_velocity_ff",
+			           //gr::io_signature::make(2, 2, vlen*sizeof(float)),
+                       //gr::io_signature::makev(2, 2, output_sizes));
+    	}
+
+    	/*
+     	* Our virtual destructor.
+     	*/
+    	doppler_velocity_ff_impl::~doppler_velocity_ff_impl()
+    	{
+    	}
+    	
+    	double 
+    	doppler_velocity_ff_impl::signal_dB(double signal_fft)
+    	{
+    		//Blackmanharris factor: Calculated from obeservation in GNU Radio FFT2SINK.
+    		double BH_factor = 1.9733; 
+    		return 20*log10((signal_fft*BH_factor)/(d_vlen*2));
+    	}
+    	double
+    	doppler_velocity_ff_impl::signal_volt(double signal_fft)
+    	{
+    		//Blackmanharris factor: Calculated from obeservation in GNU Radio FFT2SINK.
+    		double BH_factor = 1.9733; 
+    		return (signal_fft*BH_factor)/(d_vlen*2);
+    	}
+
+    	int
+    	doppler_velocity_ff_impl::work(int noutput_items,
+			  	gr_vector_const_void_star &input_items,
+			  	gr_vector_void_star &output_items)
+    	{
+    		// Do <+signal processing+>
+        	float speed_mps_radar = 0.0;  //The speed measured by the radar in meters per second.
+        	float speed_kph_radar = 0.0;  //The speed measured by the radar in kilometer per hour.
+        	float speed_kph_target = 0.0; //The speed of the target in kilometer per hour.
+        	float doppler_freq = 0.0;
+        	const float c = 3.0e8; //Light speed.
+        	float lambda = c/(float)d_radar_freq; //Wavelength of the radar RF signal.
+        	int max_index_negative = 0;
+			int max_index_positive = 0;
+			int direction = 0; //if direction = 1 Target is aproaching, if direction = 2 Target is going away.
+        	float angle_of_approach_rad = d_angle_of_approach*((float)(2.0*M_PI)/360.0); //convert from degrees to rad.
+        	          
+        	float *optr = (float *)output_items[0];
+       		int *optr_direction = (int *)output_items[1];
+            
+        	int ninputs = input_items.size();
+            
+        	for(int i = 0; i < noutput_items; i++) 
+			{
+            	float max_negative = ((float *)input_items[0])[i*d_vlen];
+				float max_positive = ((float *)input_items[1])[i*d_vlen];
+                
+            	for(int j = 0; j < (int)((d_lowpass_cut_freq*(d_vlen*2))/(d_samples_per_sec)); j++ ) //Only look for changes in the first d_lowpass_cut_freq (Hz). This acts like a low pass filter, eliminating all the frequencies above lowpass_cutoff_frequency because they are not frequencies of interest for this desing.
+				{
+                	if( (((float *)input_items[0])[i*d_vlen + j] > max_negative) 
+						&& (signal_dB(((float *)input_items[0])[i*d_vlen + j]) > d_signal_min_dB) ) 
+					{
+						/*printf("\r\n Bucle especial negativo %f max %f", 
+						((float*)input_items[1])[i*d_vlen + j], max_negative);*/
+                    	max_negative = ((float*)input_items[0])[i*d_vlen + j];
+                    	max_index_negative = j;                     
+                	}
+					if( (((float *)input_items[1])[i*d_vlen + j] > max_positive) 
+						&& (signal_dB(((float *)input_items[1])[i*d_vlen + j]) > d_signal_min_dB) ) 
+					{
+						/*printf("\r\n Bucle especial positivo %f max %f", 
+						((float*)input_items[1])[i*d_vlen + j], max_positive);*/
+                   		max_positive = ((float*)input_items[1])[i*d_vlen + j];
+                    	max_index_positive = j;                     
+                	}
+            	}
+                
+            	//Calculation of doppler frequency from the index, and the speed from doppler frequency:
+            	
+				/* --------------------------------No Target detected--------------------------------*/
+            	if( (signal_dB(max_negative) < d_signal_min_dB) && (signal_dB(max_positive) < d_signal_min_dB) ) 
+				{
+                	speed_kph_target = 0; // -1 means that there is no moving target on sight.
+					direction = 0; // No Target detected.
+				
+					*optr++ = (float)speed_kph_target;
+            		*optr_direction++ = (int)direction;
+
+					// Tell runtime system how many output items we produced.
+					//printf("\r\nnoutput_items = %d", noutput_items);
+            		return noutput_items;
+            	}
+				/* ----------------------------------------------------------------------------------*/			
+
+				/* ---------------------------Going away Target detected-----------------------------*/
+            	if(signal_dB(max_negative) > d_signal_min_dB) //Target going away. Negative Doppler Frequency.
+				{
+               		doppler_freq = (float)((float)max_index_negative/((float)d_vlen*2))*(float)d_samples_per_sec;
+                	speed_mps_radar = (float)(doppler_freq*lambda)/2.0;
+                	speed_kph_radar = (float)speed_mps_radar*3.6;
+                	speed_kph_target = (float)speed_kph_radar/(float)cos(angle_of_approach_rad); //Speed considering the angle of approach of the target towards the radar.
+						direction = 2; //Target going away. Negative Doppler Frequency.
+            	}
+				/* ----------------------------------------------------------------------------------*/
+
+				/* ----------------------------Aproaching Target detected----------------------------*/
+				else if(signal_dB(max_positive) > d_signal_min_dB) //Target aproaching. Positive Doppler Frequency.
+				{
+                	doppler_freq = (float)((float)max_index_positive/((float)d_vlen*2))*(float)d_samples_per_sec;
+                	speed_mps_radar = (float)(doppler_freq*lambda)/2.0;
+                	speed_kph_radar = (float)speed_mps_radar*3.6;
+                	speed_kph_target = (float)speed_kph_radar/(float)cos(angle_of_approach_rad); //Speed considering the angle of approach of the target towards the radar.
+					direction = 1; //Target aproaching. Positive Doppler Frequency.
+            	}
+				/* ----------------------------------------------------------------------------------*/
+				
+				//For debug purposes:
+				/*printf("\r\n\r\nMax Index Positive = %d", max_index_positive);
+				printf("\t\tMax Index Negative = %d", max_index_negative);
+				printf("\r\nMax Amp Positive = %f V", signal_volt(max_positive));
+				printf("\t\tMax Amp Negative = %f V", signal_volt(max_negative));
+				printf("\r\nMax Power Positive = %f dB", signal_dB(max_positive));
+				printf("\t\tMax Power Negative = %f dB", signal_dB(max_negative));
+				printf("\r\nDopper Frequency = %f Hz", doppler_freq);
+				printf("\t\tSpeed = %f Kph", speed_kph_target);*/
+			
+				if(direction == 1)
+				{
+					printf("\r\n\r\nMax Index Positive = %d", max_index_positive);
+					printf("\r\nMax Amp Positive = %f V", signal_volt(max_positive));
+					printf("\r\nMax Power Positive = %f dB", signal_dB(max_positive));
+					printf("\r\nDopper Frequency = %f Hz", doppler_freq);
+					printf("\r\nSpeed = %f Kph", speed_kph_target);
+					printf("\r\nTarget Aproaching");
+				}
+				else if(direction == 2)
+				{
+					printf("\r\n\r\nMax Index Negative = %d", max_index_negative);
+					printf("\r\nMax Amp Negative = %f V", signal_volt(max_negative));
+					printf("\r\nMax Power Negative = %f dB", signal_dB(max_negative));
+					printf("\r\nDopper Frequency = %f Hz", doppler_freq);
+					printf("\r\nSpeed = %f Kph", speed_kph_target);
+					printf("\r\nTarget Going Away");
+				}
+
+            	*optr++ = (float)speed_kph_target;
+            	*optr_direction++ = (int)direction;
+        	}
+            
+        	// Tell runtime system how many output items we produced.
+			//printf("\r\nnoutput_items = %d", noutput_items);
+        	return noutput_items;
+    	}
+
+	} /* namespace cwradar */
+} /* namespace gr */
+
