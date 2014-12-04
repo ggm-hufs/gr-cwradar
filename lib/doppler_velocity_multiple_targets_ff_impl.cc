@@ -50,7 +50,7 @@ namespace gr
 			  d_vlen(vlen), //Half of the FFT lengt (because it's divided in posivite and negative frequencies).
 			  d_samples_per_sec(samples_per_sec), //sample rate.
 			  d_radar_freq(radar_freq), //radar frequency.
-			  d_signal_min_dB(signal_min_dB), //Power Threshold in dBm.
+			  d_signal_min_dB(signal_min_dB), //Power Threshold in dB.
 			  d_angle_of_approach(angle_of_approach), //Relative angle between the target movement direction and the line of sight of the radar.
 			  d_lowpass_cut_freq(lowpass_cut_freq), //Low-Pass Cutoff Frequency for the fft.
 			  d_highpass_cut_freq(highpass_cut_freq), //High-Pass Cutoff Frequency for the fft.
@@ -65,8 +65,7 @@ namespace gr
 			set_lowpass_cut_freq(lowpass_cut_freq);
 			set_highpass_cut_freq(highpass_cut_freq);
 			set_max_num_of_targets(max_num_of_targets);
-			set_doppler_signal_bw(doppler_signal_bw);
-			
+			set_doppler_signal_bw(doppler_signal_bw);		
 		}
 
 		/*
@@ -77,17 +76,17 @@ namespace gr
 		}
 		
 		double 
-    	doppler_velocity_multiple_targets_ff_impl::signal_dB(double signal_fft) //Function to calculate the signal power in dBm.
+    	doppler_velocity_multiple_targets_ff_impl::signal_dB(double signal_fft) //Function to calculate the signal amplitude in dB.
     	{
-    		//Blackmanharris factor: Calculated from obeservation in GNU Radio FFT2SINK.
-    		double BH_factor = 1.9733; //This is the stimated attenuation of the Blackman-Harris window function.
+    		//Blackmanharris factor: Calculated from observation in GNU Radio FFT2SINK.
+    		double BH_factor = 1.9733; //This is the estimated attenuation of the Blackman-Harris window function.
     		return 20*log10((signal_fft*BH_factor)/(d_vlen*2));
     	}
     	double
-    	doppler_velocity_multiple_targets_ff_impl::signal_volt(double signal_fft) //Function to calculate the signal power in natural units.
+    	doppler_velocity_multiple_targets_ff_impl::signal_volt(double signal_fft) //Function to calculate the signal amplitude in volts.
     	{
-    		//Blackmanharris factor: Calculated from obeservation in GNU Radio FFT2SINK.
-    		double BH_factor = 1.9733; //This is the stimated attenuation of the Blackman-Harris window function.
+    		//Blackmanharris factor: Calculated from observation in GNU Radio FFT2SINK.
+    		double BH_factor = 1.9733; //This is the estimated attenuation of the Blackman-Harris window function.
     		return (signal_fft*BH_factor)/(d_vlen*2);
     	}
 
@@ -101,15 +100,15 @@ namespace gr
 			float speed_kph_radar[d_max_num_of_targets];  //The speed measured by the radar in kilometer per hour.
 			float speed_kph_target[d_max_num_of_targets]; //The speed of the target in kilometer per hour.
 			int directions[d_max_num_of_targets]; //The vector with the speed of every target.
-			float doppler_freq[d_max_num_of_targets]; //Variable to store the doppler frequencies.
-			const float c = C; //Light speed. Difined with the constant C: #define C 299792458
+			float doppler_freq[d_max_num_of_targets]; //Variable to store the Doppler frequencies.
+			const float c = C; //Light speed. Defined with the constant C: #define C 299792458
 			float lambda = c/(float)d_radar_freq; //Wavelength of the radar RF signal.
 			int max_index_positive[d_max_num_of_targets]; //index array for positive frequency
 			int max_index_negative[d_max_num_of_targets]; //index array for negative frequency
 			float max_array_positive[d_max_num_of_targets]; //max array for positive frequency
 			float max_array_negative[d_max_num_of_targets]; //max array for negative frequency
 			int num_of_targets = 0; //Num of targets detected by the radar in the line of sight.
-			int doppler_signal_bandwidth_bins = (int)((d_doppler_signal_bw*(d_vlen*2))/(d_samples_per_sec)); //Bandwidth of the doppler signal in beans of the FFT to skip to detect the next target.
+			int doppler_signal_bandwidth_bins = (int)((d_doppler_signal_bw*(d_vlen*2))/(d_samples_per_sec)); //Bandwidth of the Doppler signal in beans of the FFT to skip to detect the next target.
 			float angle_of_approach_rad = d_angle_of_approach*((float)(2.0*M_PI)/360.0); //convert from degrees to rad.
 			
 			for(int iterator=0;iterator<d_max_num_of_targets;iterator++) //Inizialize the array to 0.
@@ -139,7 +138,7 @@ namespace gr
 				for(int j = (int)((d_highpass_cut_freq*(d_vlen*2))/(d_samples_per_sec)); j < (int)((d_lowpass_cut_freq*(d_vlen*2))/(d_samples_per_sec)); j++ ) //Only look for changes in the first d_lowpass_cut_freq (Hz). This acts like a low pass filter, eliminating all the frequencies above d_lowpass_cut_freq (Hz). Also a High-Pass filter is implemented to configure the radar to ignore targets below some certain frequency depending on the application, (i.e. slow targets).
 				{
 					if( (((float *)input_items[0])[i*d_vlen + j] > max_negative) 
-						&& (signal_dB(((float *)input_items[0])[i*d_vlen + j]) > d_signal_min_dB) ) //If the signal is above the threshold level and is bigger than the last checked value in the loop then that is the doppler frequency. This check only the negative frequency part.
+						&& (signal_dB(((float *)input_items[0])[i*d_vlen + j]) > d_signal_min_dB) ) //If the signal is above the threshold level and is bigger than the last checked value in the loop then that is the Doppler frequency. This check only the negative frequency part.
 					{
                     	max_negative = ((float*)input_items[0])[i*d_vlen + j];
 						
@@ -147,14 +146,14 @@ namespace gr
 						&& (((float *)input_items[0])[i*d_vlen + (j-1)] < max_negative) ) //Look for a maximum checking that both samples on the right and left are minor than the desired sample.
 						{
 							max_array_negative[num_of_targets] = max_negative;  //Get the value of the signal.
-							max_index_negative[num_of_targets] = j; //Get the index to calculate the doppler frequency.
+							max_index_negative[num_of_targets] = j; //Get the index to calculate the Doppler frequency.
 							num_of_targets++; //Increments the number of targets in one.
-							j += doppler_signal_bandwidth_bins/2; //Skip half of the doppler signal bandwidth (in bins of the FFT) to begin to look for the next target that must be separated at least half of the bandwidth of the doppler signal, otherwise will be detected as the same target.
+							j += doppler_signal_bandwidth_bins/2; //Skip half of the Doppler signal bandwidth (in bins of the FFT) to begin to look for the next target that must be separated at least half of the bandwidth of the Doppler signal, otherwise will be detected as the same target.
 							max_negative = 0; //reset the maximum so it can keep looking for next maximum.
 						}
                 	}
 					if( (((float *)input_items[1])[i*d_vlen + j] > max_positive) 
-						&& (signal_dB(((float *)input_items[1])[i*d_vlen + j]) > d_signal_min_dB) ) //If the signal is above the threshold level and is bigger than the last checked value in the loop then that is the doppler frequency. This check only the positive frequency part.
+						&& (signal_dB(((float *)input_items[1])[i*d_vlen + j]) > d_signal_min_dB) ) //If the signal is above the threshold level and is bigger than the last checked value in the loop then that is the Doppler frequency. This check only the positive frequency part.
 					{
 						max_positive = ((float*)input_items[1])[i*d_vlen + j];
 						
@@ -162,15 +161,15 @@ namespace gr
 						&& (((float *)input_items[1])[i*d_vlen + (j-1)] < max_positive) ) //Look for a maximum checking that both samples on the right and left are minor than the desired sample.
 						{
 							max_array_positive[num_of_targets] = max_positive;  //Get the value of the signal.
-							max_index_positive[num_of_targets] = j; //Get the index to calculate the doppler frequency.
+							max_index_positive[num_of_targets] = j; //Get the index to calculate the Doppler frequency.
 							num_of_targets++; //Increments the number of targets in one.
-							j += doppler_signal_bandwidth_bins/2; //Skip half of the doppler signal bandwidth (in bins of the FFT) to begin to look for the next target that must be separated at least half of the bandwidth of the doppler signal, otherwise will be detected as the same target.
+							j += doppler_signal_bandwidth_bins/2; //Skip half of the Doppler signal bandwidth (in bins of the FFT) to begin to look for the next target that must be separated at least half of the bandwidth of the Doppler signal, otherwise will be detected as the same target.
 							max_positive = 0; //reset the maximum so it can keep looking for next maximum.
 						}
                 	}
 				}
 			   
-				//Calculation of doppler frequency from the index and the speed in mps and kph:
+				//Calculation of Doppler frequency from the index and the speed in mps and kph:
 				if(num_of_targets > d_max_num_of_targets)
 				{
 					printf("\r\nError, number of targets detected is greater than the maximum number of targets configured \r\n Please increment the parameter ""max_num_of_targets"".\r\n");
@@ -202,8 +201,8 @@ namespace gr
 					/* ---------------------------Going away Target detected-----------------------------*/
 					if(signal_dB(max_array_negative[i]) > d_signal_min_dB) //Target going away. Negative Doppler Frequency.
 					{
-						doppler_freq[i] = (float)((float)max_index_negative[i]/((float)d_vlen*2))*(float)d_samples_per_sec; //Get the doppler frequency from the frequency index.
-						speed_mps_radar[i] = (float)(doppler_freq[i]*lambda)/2.0; //Compute formula that extract the speed from the doppler frequency.
+						doppler_freq[i] = (float)((float)max_index_negative[i]/((float)d_vlen*2))*(float)d_samples_per_sec; //Get the Doppler frequency from the frequency index.
+						speed_mps_radar[i] = (float)(doppler_freq[i]*lambda)/2.0; //Compute formula that extract the speed from the Doppler frequency.
 						speed_kph_radar[i] = (float)speed_mps_radar[i]*3.6; //Convert the speed in kilometers per hour.
 						speed_kph_target[i] = (float)speed_kph_radar[i]/(float)cos(angle_of_approach_rad); //Speed of the target considering the angle between the target moving direction and the radar.
 						directions[i] = 2; //Target receding. Negative Doppler Frequency.
@@ -213,8 +212,8 @@ namespace gr
 					/* ----------------------------Aproaching Target detected----------------------------*/
 					else if(signal_dB(max_array_positive[i]) > d_signal_min_dB) //Target aproaching. Positive Doppler Frequency.
 					{
-						doppler_freq[i] = (float)((float)max_index_positive[i]/((float)d_vlen*2))*(float)d_samples_per_sec; //Get the doppler frequency from the frequency index.
-						speed_mps_radar[i] = (float)(doppler_freq[i]*lambda)/2.0; //Compute formula that extract the speed from the doppler frequency.
+						doppler_freq[i] = (float)((float)max_index_positive[i]/((float)d_vlen*2))*(float)d_samples_per_sec; //Get the Doppler frequency from the frequency index.
+						speed_mps_radar[i] = (float)(doppler_freq[i]*lambda)/2.0; //Compute formula that extract the speed from the Doppler frequency.
 						speed_kph_radar[i] = (float)speed_mps_radar[i]*3.6; //Convert the speed in kilometers per hour.
 						speed_kph_target[i] = (float)speed_kph_radar[i]/(float)cos(angle_of_approach_rad); //Speed of the target considering the angle between the target moving direction and the radar.
 						directions[i] = 1; //Target approaching. Positive Doppler Frequency.
@@ -231,7 +230,7 @@ namespace gr
 						{
 							printf("\r\nMax Index = %d", max_index_positive[i]);
 							printf("\r\nMax Amp = %f V", signal_volt(max_array_positive[i]));
-							printf("\r\nMax Power = %f dBm", signal_dB(max_array_positive[i]));
+							printf("\r\nMax Amp (dB) = %f dB", signal_dB(max_array_positive[i]));
 							printf("\r\nDoppler Frequency = %f Hz", doppler_freq[i]);
 							printf("\r\nSpeed = %f Kph", speed_kph_target[i]);
 							printf("\r\nTarget %d Approaching", i+1);
@@ -240,7 +239,7 @@ namespace gr
 						{
 							printf("\r\nMax Index = %d", max_index_negative[i]);
 							printf("\r\nMax Amp = %f V", signal_volt(max_array_negative[i]));
-							printf("\r\nMax Power = %f dBm", signal_dB(max_array_negative[i]));
+							printf("\r\nMax Amp (dB) = %f dB", signal_dB(max_array_negative[i]));
 							printf("\r\nDoppler Frequency = -%f Hz", doppler_freq[i]);
 							printf("\r\nSpeed = %f Kph", speed_kph_target[i]);
 							printf("\r\nTarget %d Receding", i+1);

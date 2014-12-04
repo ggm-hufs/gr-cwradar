@@ -33,7 +33,7 @@ namespace gr
 				size_t d_vlen; //Half of the FFT lengt (because it's divided in posivite and negative frequencies).
 				double d_samples_per_sec; //sample rate.
 				double d_radar_freq; //radar frequency.
-				double d_signal_min_dB; //Power Threshold in dBm.
+				double d_signal_min_dB; //Signal Threshold in dB.
 				double d_angle_of_approach; //Relative angle between the target movement direction and the line of sight of the radar.
 				double d_lowpass_cut_freq; //Low-Pass Cutoff Frequency for the fft.
 				double d_highpass_cut_freq; //High-Pass Cutoff Frequency for the fft.
@@ -70,8 +70,8 @@ namespace gr
 			double doppler_signal_bw() const { return d_doppler_signal_bw; }
 			
 			//Function to calculate the signal amplitude in dB:
-			double signal_dB(double signal_fft); //convert the value of fft in to dB
-			double signal_volt(double signal_fft); //conver the value of fft to natural units (volts)
+			double signal_dB(double signal_fft); //convert the value of fft in to dB.
+			double signal_volt(double signal_fft); //conver the value of fft to volts.
 			
 		};
 
