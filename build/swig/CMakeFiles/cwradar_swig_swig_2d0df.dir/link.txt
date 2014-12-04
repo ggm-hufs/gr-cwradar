@@ -1,1 +1,0 @@
-/usr/bin/c++   -O3 -DNDEBUG    CMakeFiles/cwradar_swig_swig_2d0df.dir/cwradar_swig_swig_2d0df.cpp.o  -o cwradar_swig_swig_2d0df -rdynamic 
