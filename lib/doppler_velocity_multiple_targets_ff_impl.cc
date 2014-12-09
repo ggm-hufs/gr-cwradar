@@ -97,8 +97,8 @@ namespace gr
 		{
 			// Do <+signal processing+>
 			float speed_mps_radar[d_max_num_of_targets];  //The speed measured by the radar in meters per second.
-			float speed_kph_radar[d_max_num_of_targets];  //The speed measured by the radar in kilometer per hour.
-			float speed_kph_target[d_max_num_of_targets]; //The speed of the target in kilometer per hour.
+			float speed_kph_radar[d_max_num_of_targets];  //The speed measured by the radar in kilometers per hour.
+			float speed_kph_target[d_max_num_of_targets]; //The speed of the target in kilometers per hour.
 			int directions[d_max_num_of_targets]; //The vector with the speed of every target.
 			float doppler_freq[d_max_num_of_targets]; //Variable to store the Doppler frequencies.
 			const float c = C; //Light speed. Defined with the constant C: #define C 299792458
@@ -109,7 +109,7 @@ namespace gr
 			float max_array_negative[d_max_num_of_targets]; //max array for negative frequency
 			int num_of_targets = 0; //Num of targets detected by the radar in the line of sight.
 			int doppler_signal_bandwidth_bins = (int)((d_doppler_signal_bw*(d_vlen*2))/(d_samples_per_sec)); //Bandwidth of the Doppler signal in beans of the FFT to skip to detect the next target.
-			float angle_of_approach_rad = d_angle_of_approach*((float)(2.0*M_PI)/360.0); //convert from degrees to rad.
+			float angle_of_approach_rad = d_angle_of_approach*((float)(2.0*M_PI)/360.0); //Converts from degrees to rad.
 			
 			for(int iterator=0;iterator<d_max_num_of_targets;iterator++) //Inizialize the array to 0.
 			{
@@ -129,7 +129,7 @@ namespace gr
 			
 			int ninputs = input_items.size();
             
-			num_of_targets = 0; //Inicialize the number of targets to 0.
+			num_of_targets = 0; //Initialize the number of targets to 0.
 			for(int i = 0; i < noutput_items; i++) 
 			{
 				float max_negative = ((float *)input_items[0])[i*d_vlen]; //Input negative frequency vector.
@@ -193,7 +193,7 @@ namespace gr
 						*optr_num_of_targets++ = (float)num_of_targets;
 	
 						// Tell runtime system how many output items we produced.
-						//printf("\r\nnoutput_items = %d", noutput_items);
+						//printf("\r\nnoutput_items = %d", noutput_items); //For debugging purposes.
 						return noutput_items;
 					}
 					/* ----------------------------------------------------------------------------------*/			
@@ -202,8 +202,8 @@ namespace gr
 					if(signal_dB(max_array_negative[i]) > d_signal_min_dB) //Target going away. Negative Doppler Frequency.
 					{
 						doppler_freq[i] = (float)((float)max_index_negative[i]/((float)d_vlen*2))*(float)d_samples_per_sec; //Get the Doppler frequency from the frequency index.
-						speed_mps_radar[i] = (float)(doppler_freq[i]*lambda)/2.0; //Compute formula that extract the speed from the Doppler frequency.
-						speed_kph_radar[i] = (float)speed_mps_radar[i]*3.6; //Convert the speed in kilometers per hour.
+						speed_mps_radar[i] = (float)(doppler_freq[i]*lambda)/2.0; //Computes formula that extract the speed from the Doppler frequency.
+						speed_kph_radar[i] = (float)speed_mps_radar[i]*3.6; //Converts the speed in kilometers per hour.
 						speed_kph_target[i] = (float)speed_kph_radar[i]/(float)cos(angle_of_approach_rad); //Speed of the target considering the angle between the target moving direction and the radar.
 						directions[i] = 2; //Target receding. Negative Doppler Frequency.
 					}
@@ -213,8 +213,8 @@ namespace gr
 					else if(signal_dB(max_array_positive[i]) > d_signal_min_dB) //Target aproaching. Positive Doppler Frequency.
 					{
 						doppler_freq[i] = (float)((float)max_index_positive[i]/((float)d_vlen*2))*(float)d_samples_per_sec; //Get the Doppler frequency from the frequency index.
-						speed_mps_radar[i] = (float)(doppler_freq[i]*lambda)/2.0; //Compute formula that extract the speed from the Doppler frequency.
-						speed_kph_radar[i] = (float)speed_mps_radar[i]*3.6; //Convert the speed in kilometers per hour.
+						speed_mps_radar[i] = (float)(doppler_freq[i]*lambda)/2.0; //Computes formula that extract the speed from the Doppler frequency.
+						speed_kph_radar[i] = (float)speed_mps_radar[i]*3.6; //Converts the speed in kilometers per hour.
 						speed_kph_target[i] = (float)speed_kph_radar[i]/(float)cos(angle_of_approach_rad); //Speed of the target considering the angle between the target moving direction and the radar.
 						directions[i] = 1; //Target approaching. Positive Doppler Frequency.
 					}
@@ -255,7 +255,7 @@ namespace gr
 			}
 			
 			// Tell runtime system how many output items we produced.
-			//printf("\r\nnoutput_items = %d", noutput_items);
+			//printf("\r\nnoutput_items = %d", noutput_items);  //For debugging purposes.
         	return noutput_items;
 		}
 
